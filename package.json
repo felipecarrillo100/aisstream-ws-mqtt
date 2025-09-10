@@ -1,0 +1,17 @@
+{
+  "name": "aisstream-ws-mqtt",
+  "version": "1.0.0",
+  "description": "connects to an AIS WebSocket stream, transforms AIS messages into a standardized JSON format, and forwards them to an MQTT ",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "mqtt": "^5.14.1",
+    "websocket": "^1.0.34",
+    "ws": "^8.11.0"
+  }
+}
