@@ -46,8 +46,8 @@ This Node.js application connects to an AIS WebSocket stream, transforms AIS mes
 Clone the repository:
 
 ```bash
-git clone https://your-repo-url.git
-cd ais-ws-to-mqtt
+git clone https://github.com/felipecarrillo100/aisstream-ws-mqtt.git
+cd aisstream-ws-mqtt
 npm install
 ```
 
