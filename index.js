@@ -74,6 +74,7 @@ const producer = new MessageProducerMQTT({
   password: DEFAULT_MQTT_BROKER_PASSWORD,
 });
 
+console.log(`Target topic: ${DEFAULT_TOPIC}`);
 const topicControl = replaceDataWithControl(DEFAULT_TOPIC);
 
 producer.init().then(() => {
