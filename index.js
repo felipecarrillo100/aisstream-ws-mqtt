@@ -213,6 +213,10 @@ function connectWebSocket() {
 // });
 
 function replaceDataWithControl(path) {
+    if (!path || typeof path !== 'string') {
+        console.warn('replaceDataWithControl received invalid topic:', path);
+        process.exit(1);
+    }
   const parts = path.split('/');
   if (parts.length >= 3 && parts[0] === 'producers' && parts[2] === 'data') {
     parts[2] = 'control';
