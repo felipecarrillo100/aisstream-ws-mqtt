@@ -6,10 +6,15 @@ const WebSocket = require('ws');
 const minimist = require('minimist');
 const MessageProducerMQTT = require('./modules/MessageProducerMQTT');
 
+
+const DEBUG_LOG= process.env.DEBUG_LOG || false ;
 // Defaults from environment
-const DEFAULT_MQTT_BROKER = process.env.MQTT_BROKER;
-const DEFAULT_MQTT_BROKER_USERNAME = process.env.MQTT_USERNAME || 'admin';
-const DEFAULT_MQTT_BROKER_PASSWORD = process.env.MQTT_PASSWORD || 'admin';
+const DEFAULT_MQTT_HOST = process.env.MQTT_HOST || "localhost" ;
+const DEFAULT_MQTT_PORT = process.env.MQTT_PORT || 1883;
+
+const DEFAULT_MQTT_BROKER = `mqtt://${DEFAULT_MQTT_HOST}:${DEFAULT_MQTT_PORT}`;
+const DEFAULT_MQTT_BROKER_USERNAME = process.env.MQTT_USER || 'admin';
+const DEFAULT_MQTT_BROKER_PASSWORD = process.env.MQTT_PASS || 'admin';
 const DEFAULT_TOPIC = process.env.MQTT_TOPIC;
 const DEFAULT_API_KEY = process.env.AIS_API_KEY;
 const DEFAULT_WS = process.env.WS_URL;
@@ -35,7 +40,7 @@ Options:
 }
 
 // Parse CLI args for bbox and blockid
-const args = minimist(process.argv.slice(2), { 
+const args = minimist(process.argv.slice(2), {
   string: ['bbox', 'blockid'],
   boolean: ['help'],
   alias: { h: 'help' }
@@ -74,7 +79,8 @@ const topicControl = replaceDataWithControl(DEFAULT_TOPIC);
 producer.init().then(() => {
   console.log(`MQTT producer ready, publishing to topic: ${DEFAULT_TOPIC}`);
   producer.sendMessage(topicControl, JSON.stringify({ action: "CLEAR" }));
-  connectWebSocket();
+  const websocket = connectWebSocket();
+  setupGracefulShutdown(websocket, producer);
 }).catch((err) => {
   console.error('Failed to initialize MQTT producer:', err);
   process.exit(1);
@@ -135,7 +141,7 @@ function transformMessageAndSort(aisMessage) {
     case 'CoordinatedUTCInquiry': extractProps('CoordinatedUTCInquiry'); break;
     default: properties = {};
   }
-  
+
 
   const message = {
     action: MessageType === 'PositionReport' ? 'PUT' : 'PATCH',
@@ -154,7 +160,8 @@ function connectWebSocket() {
   socket.on('open', () => {
     console.log(`Connected to WebSocket ${DEFAULT_WS}`);
     const subscriptionMessage = { APIkey: DEFAULT_API_KEY, BoundingBoxes: DEFAULT_BBOX_CLI };
-    console.log('Sending subscription:', JSON.stringify(subscriptionMessage));
+    const maskedApiKey = maskApiKey(DEFAULT_API_KEY);
+    console.log('Sending subscription:', JSON.stringify({ ...subscriptionMessage, APIkey: maskedApiKey }));
     socket.send(JSON.stringify(subscriptionMessage));
   });
 
@@ -169,16 +176,16 @@ function connectWebSocket() {
             producer.sendMessage(`${DEFAULT_TOPIC}/${BLOCK_ID}/${type}/${message.id}`, message);
           } else {
             producer.sendMessage(`${DEFAULT_TOPIC}/${type}/${message.id}`, message);
-          }          
+          }
           const props = message.properties;
-          console.log(`${type} | MMSI: ${props.UserID} id ${message.id} name ${props.ShipName}`);
+          if (DEBUG_LOG) console.log(`${type} | MMSI: ${props.UserID} id ${message.id} name ${props.ShipName}`);
         } else if (type === 'ShipStaticData') {
           if (BLOCK_ID) {
             producer.sendMessage(`${DEFAULT_TOPIC}/${BLOCK_ID}/${type}/${message.id}`, message);
           } else {
             producer.sendMessage(`${DEFAULT_TOPIC}/${type}/${message.id}`, message);
           }
-          console.log(`${type} | MMSI: ${message.id} id ${message.id} name ${message.properties.ShipStaticData?.ShipName || ''}`);
+          if (DEBUG_LOG)console.log(`${type} | MMSI: ${message.id} id ${message.id} name ${message.properties.ShipStaticData?.ShipName || ''}`);
         }
       }
 
@@ -193,14 +200,16 @@ function connectWebSocket() {
     console.log(`WebSocket connection closed. Reconnecting in ${RECONNECT_INTERVAL / 1000}s...`);
     setTimeout(connectWebSocket, RECONNECT_INTERVAL);
   });
+
+  return socket;
 }
 
 // Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('Shutting down...');
-  producer.disconnect();
-  process.exit(0);
-});
+// process.on('SIGINT', async () => {
+//   console.log('Shutting down...');
+//   await producer.disconnect();
+//   process.exit(0);
+// });
 
 function replaceDataWithControl(path) {
   const parts = path.split('/');
@@ -211,4 +220,34 @@ function replaceDataWithControl(path) {
   return path;
 }
 
-module.exports = { transformMessageAndSort };
+function setupGracefulShutdown(websocket, broker) {
+    const shutdown = async (signal) => {
+        console.log(`\nReceived ${signal}, shutting down gracefully...`);
+
+        try {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                console.log("Closing WebSocket...");
+                websocket.close();
+                console.log("WebSocket closed");
+            }
+            if (broker && typeof broker.disconnect === "function") {
+                await broker.disconnect(); // ✅ Clean broker close if supported
+            }
+        } catch (err) {
+            console.error("Error during shutdown:", err);
+        } finally {
+            console.log("Shutdown complete. Exiting.");
+            process.exit(0);
+        }
+    };
+
+    process.on("SIGINT", () => shutdown("SIGINT"));  // Ctrl + C locally
+    process.on("SIGTERM", () => shutdown("SIGTERM")); // Docker stop
+}
+
+function maskApiKey(apiKey) {
+    if (!apiKey || apiKey.length <= 4) return apiKey;
+    const visible = apiKey.slice(-4);
+    const masked = '*'.repeat(apiKey.length - 4);
+    return masked + visible;
+}

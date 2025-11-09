@@ -51,7 +51,7 @@ cd aisstream-ws-mqtt
 npm install
 ```
 
-## .enc file
+## .env file
 Create a `.env` file in the project root with your configuration, you can copy .env.sample to .env and change the values accordingly
 
 
