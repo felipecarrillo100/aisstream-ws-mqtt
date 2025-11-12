@@ -162,6 +162,9 @@ function connectWebSocket() {
     console.log(`Connected to WebSocket ${DEFAULT_WS}`);
     const subscriptionMessage = { APIkey: DEFAULT_API_KEY, BoundingBoxes: DEFAULT_BBOX_CLI };
     const maskedApiKey = maskApiKey(DEFAULT_API_KEY);
+    if (BLOCK_ID !== null) {
+        console.log('BlockID:', BLOCK_ID);
+    }
     console.log('Sending subscription:', JSON.stringify({ ...subscriptionMessage, APIkey: maskedApiKey }));
     socket.send(JSON.stringify(subscriptionMessage));
   });

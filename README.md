@@ -1,6 +1,8 @@
 # AisStream WebSocket to MQTT Bridge
 
-This Node.js application connects to an AIS WebSocket stream, transforms AIS messages into a standardized JSON format, and forwards them to an MQTT broker to be consumed by Catalog Explorer Live Tracks. It supports automatic WebSocket reconnection and configurable options via a `.env` file or CLI arguments.
+This Node.js application connects to an AIS WebSocket stream, transforms AIS messages into a standardized JSON format, and forwards them to an MQTT broker to be consumed by Catalog Explorer Live Tracks. 
+
+It supports automatic WebSocket reconnection and it is configurable via a `.env` file or CLI arguments.
 
 ---
 
@@ -104,8 +106,16 @@ producers/aisstream/data/PositionReport/<MMSI>
 ├── .env                       # Environment configuration (not committed)
 └── README.md
 ```
-
 ---
+
+## Configuration (.env)
+
+This repository expects configuration in environment variables (you can place a `.env` in project root and use `dotenv`). These are the variables read by the bridge:
+- `MQTT_HOST` — MQTT broker HOST (e.g. `localhost`)
+- `MQTT_PORT` — MQTT broker PORT (e.g. 1883)
+- `MQTT_USER` — MQTT username (optional)
+- `MQTT_PASS` — MQTT password (optional)
+- `MQTT_TOPIC` — Root topic to publish messages under (e.g. `producers/aisstream/data`)
 
 ## Graceful Shutdown
 
