@@ -115,9 +115,18 @@ Press `CTRL+C` to stop the application safely. The MQTT client disconnects autom
 
 ## Use in Catalog Explorer
 
-Subscribe to `/topic/producers.aisstream` or `/topic/producers/aisstream` depending on your separator character.  
-Use wildcard `>` to receive both live position updates and ship static data updates.
-Use wildcard `PositionReport.>` to receive only live position updates.
+- Subscribe to:
+
+`/topic/producers.aisstream` 
+
+or 
+
+`/topic/producers/aisstream` 
+
+depending on your separator character.  
+
+* Use wildcard `>` to receive both live position updates and ship static data updates.
+* Use wildcard `PositionReport.>` to receive only live position updates.
 ---
 
 ## License
