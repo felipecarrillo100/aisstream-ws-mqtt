@@ -52,9 +52,11 @@ if (args.help) {
 }
 
 let DEFAULT_BBOX_CLI = DEFAULT_BBOX;
-if (args.bbox) {
+const userBBox = args.bbox || process.env.BLOCK_BBOX;
+const BLOCK_ID = args.blockid || process.env.BLOCK_ID || null;
+if (userBBox) {
   try {
-    const parsedBbox = JSON.parse(args.bbox);
+    const parsedBbox = JSON.parse(userBBox);
     if (Array.isArray(parsedBbox)) {
       DEFAULT_BBOX_CLI = parsedBbox;
     } else {
@@ -65,7 +67,7 @@ if (args.bbox) {
   }
 }
 
-const BLOCK_ID = args.blockid || null;
+
 
 // Initialize MQTT producer
 const producer = new MessageProducerMQTT({
